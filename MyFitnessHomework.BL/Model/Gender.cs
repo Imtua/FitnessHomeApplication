@@ -3,6 +3,7 @@
     /// <summary>
     /// Пол.
     /// </summary>
+    [Serializable]
     public class Gender
     {
         /// <summary>
