@@ -8,40 +8,65 @@ namespace FitnessHomeApplication.BL.Controller
     /// </summary>
     public class UserController
     {
-        /// <summary>
-        /// Пользователь приложения.
-        /// </summary>
-        public User User { get; }
+        public List<User> Users { get; }
+        public User CurrentUser { get; } 
+
+        public bool IsNewUser { get; } = false;
 
         /// <summary>
         /// Создание нового контроллера пользователя.
         /// </summary>
         /// <param name="user"></param> 
-        public UserController(string userName, string genderName, DateTime birthDay, double weight, double height)
+        public UserController(string userName)
         {
-            // TODO: Проверка входных параметров
+            if (string.IsNullOrWhiteSpace(userName))
+            {
+                throw new ArgumentNullException("Имя пользователя не может быть пустым", nameof(userName));
+            }
 
-            var gender = new Gender( genderName );
-            User = new User(userName, gender, birthDay, weight, height);
+            Users = GetUsersData();
+
+            CurrentUser = Users.SingleOrDefault(u => u.Name == userName);
+
+            if (CurrentUser == null)
+            {
+                CurrentUser = new User(userName);
+                Users.Add(CurrentUser);
+                IsNewUser = true;
+                Save();
+            }
         }
 
         /// <summary>
-        /// Получить данные пользователя.
+        /// Получить сохраненный список пользователей.
         /// </summary>
         /// <returns> Пользователь приложения. </returns>
-        public UserController()
+        private List<User> GetUsersData()
         {
             var formatter = new BinaryFormatter();
 
             using (var fs = new FileStream("users.dat", FileMode.OpenOrCreate))
             {
-                if (formatter.Deserialize(fs) is User user)
+                if (formatter.Deserialize(fs) is List<User> users)
                 {
-                    User = user;
+                    return users;
                 }
-
-                // TODO: Что-то делать если не удалось прочитать
+                else
+                {
+                    return new List<User>();
+                }
             }
+        }
+
+        public void SetNewUserData(string genderName, DateTime birthDate, double weight = 1, double height = 1)
+        {
+            // TODO: Сделать проверку
+
+            CurrentUser.Gender = new Gender(genderName);
+            CurrentUser.BirthDate = birthDate;
+            CurrentUser.Weight = weight;
+            CurrentUser.Height = height;
+            Save();
         }
 
         /// <summary>
@@ -53,7 +78,7 @@ namespace FitnessHomeApplication.BL.Controller
 
             using (var fileStream = new FileStream("users.dat", FileMode.OpenOrCreate))
             {
-                formatter.Serialize(fileStream, User);
+                formatter.Serialize(fileStream, Users);
             }
         }
     }
